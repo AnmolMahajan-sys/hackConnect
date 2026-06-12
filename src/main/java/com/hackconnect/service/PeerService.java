@@ -29,7 +29,7 @@ public class PeerService {
 
     @Transactional(readOnly = true)
     public List<PeerResponse.UserCard> discoverPeople(String domain, String skill,
-                                                       String college, Long currentUserId) {
+                                                      String college, Long currentUserId) {
         List<User> users = userRepository.discoverPeers(
                 currentUserId,
                 blank(domain)  ? null : domain,
@@ -45,7 +45,7 @@ public class PeerService {
 
     @Transactional
     public PeerResponse.ConnectionCard sendRequest(Long receiverId, String senderEmail,
-                                                    PeerRequest.SendConnection req) {
+                                                   PeerRequest.SendConnection req) {
         User sender   = findByEmail(senderEmail);
         User receiver = findById(receiverId);
 
@@ -53,7 +53,7 @@ public class PeerService {
             throw new HackConnectException.BadRequestException("You cannot connect with yourself");
 
         if (connectionRepo.existsBySenderAndReceiver(sender, receiver) ||
-            connectionRepo.existsBySenderAndReceiver(receiver, sender))
+                connectionRepo.existsBySenderAndReceiver(receiver, sender))
             throw new HackConnectException.DuplicateResourceException(
                     "Connection request already exists");
 
@@ -68,15 +68,15 @@ public class PeerService {
         messagingTemplate.convertAndSendToUser(
                 receiver.getEmail(), "/queue/notifications",
                 Map.of("type", "CONNECTION_REQUEST",
-                       "from", sender.getName(),
-                       "id",   saved.getId()));
+                        "from", sender.getName(),
+                        "id",   saved.getId()));
 
         return toConnectionCard(saved);
     }
 
     @Transactional
     public PeerResponse.ConnectionCard respondToRequest(Long requestId, boolean accept,
-                                                         String receiverEmail) {
+                                                        String receiverEmail) {
         ConnectionRequest conn = connectionRepo.findById(requestId)
                 .orElseThrow(() -> new HackConnectException
                         .ResourceNotFoundException("Connection request", requestId));
@@ -88,14 +88,14 @@ public class PeerService {
             throw new HackConnectException.BadRequestException("Request already handled");
 
         conn.setStatus(accept ? ConnectionRequest.Status.ACCEPTED
-                              : ConnectionRequest.Status.DECLINED);
+                : ConnectionRequest.Status.DECLINED);
         ConnectionRequest saved = connectionRepo.save(conn);
 
         if (accept) {
             messagingTemplate.convertAndSendToUser(
                     conn.getSender().getEmail(), "/queue/notifications",
                     Map.of("type", "CONNECTION_ACCEPTED",
-                           "from", conn.getReceiver().getName()));
+                            "from", conn.getReceiver().getName()));
         }
         return toConnectionCard(saved);
     }
@@ -189,7 +189,7 @@ public class PeerService {
 
     @Transactional(readOnly = true)
     public List<PeerResponse.GroupSummary> discoverGroups(String domain, String hackathon,
-                                                           Long userId) {
+                                                          Long userId) {
         List<Group> groups;
         if (!blank(hackathon))
             groups = groupRepo.findByHackathonNameContainingIgnoreCaseAndOpenTrue(hackathon);
@@ -220,8 +220,8 @@ public class PeerService {
 
     @Transactional
     public PeerResponse.MessageResponse sendMessage(Long groupId,
-                                                     PeerRequest.SendMessage req,
-                                                     String email) {
+                                                    PeerRequest.SendMessage req,
+                                                    String email) {
         User  user  = findByEmail(email);
         Group group = findGroup(groupId);
 
@@ -304,7 +304,7 @@ public class PeerService {
                 .id(g.getId()).name(g.getName()).description(g.getDescription())
                 .domain(g.getDomain()).hackathonName(g.getHackathonName()).type(g.getType())
                 .memberCount(g.getMembers().size()).maxMembers(g.getMaxMembers())
-                .open(g.isOpen()).isMember(isMember)
+                .open(g.isOpen()).member(isMember)
                 .creator(toUserCard(g.getCreator(), userId))
                 .createdAt(g.getCreatedAt())
                 .build();
@@ -315,7 +315,7 @@ public class PeerService {
                 && memberRepo.existsByGroupIdAndUserId(g.getId(), userId);
         boolean isAdmin  = g.getMembers().stream()
                 .anyMatch(m -> m.getUser().getId().equals(userId)
-                            && m.getRole() == GroupMember.Role.ADMIN);
+                        && m.getRole() == GroupMember.Role.ADMIN);
 
         List<PeerResponse.MemberCard> members = g.getMembers().stream()
                 .map(m -> PeerResponse.MemberCard.builder()
@@ -328,7 +328,7 @@ public class PeerService {
                 .id(g.getId()).name(g.getName()).description(g.getDescription())
                 .domain(g.getDomain()).hackathonName(g.getHackathonName()).type(g.getType())
                 .maxMembers(g.getMaxMembers()).open(g.isOpen())
-                .isMember(isMember).isAdmin(isAdmin)
+                .member(isMember).admin(isAdmin)
                 .creator(toUserCard(g.getCreator(), userId))
                 .members(members).createdAt(g.getCreatedAt())
                 .build();

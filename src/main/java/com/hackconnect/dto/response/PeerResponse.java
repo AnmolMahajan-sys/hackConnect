@@ -3,6 +3,7 @@ package com.hackconnect.dto.response;
 import com.hackconnect.model.ConnectionRequest;
 import com.hackconnect.model.Group;
 import com.hackconnect.model.GroupMessage;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -24,7 +25,7 @@ public class PeerResponse {
         private Set<String> interests;
         private String githubUrl;
         private String linkedinUrl;
-        private ConnectionStatus connectionStatus; // NONE | PENDING_SENT | PENDING_RECEIVED | CONNECTED
+        private ConnectionStatus connectionStatus;
     }
 
     public enum ConnectionStatus { NONE, PENDING_SENT, PENDING_RECEIVED, CONNECTED }
@@ -40,7 +41,11 @@ public class PeerResponse {
         private LocalDateTime createdAt;
     }
 
-    /* ── Group summary (list view) ──────────────────────────────────────── */
+    /* ── Group summary (list view) ────────────────────────────────────────
+       NOTE: fields below are named "member"/"open" (not "isMember"/"isOpen")
+       because Lombok strips the "is" prefix from boolean getters and Jackson
+       serializes based on the getter name. Using "member" + @JsonProperty
+       ensures the JSON key is exactly "isMember" / "open" as the frontend expects. */
     @Data @Builder
     public static class GroupSummary {
         private Long   id;
@@ -51,8 +56,13 @@ public class PeerResponse {
         private Group.GroupType type;
         private int    memberCount;
         private int    maxMembers;
+
+        @JsonProperty("open")
         private boolean open;
-        private boolean isMember;
+
+        @JsonProperty("isMember")
+        private boolean member;
+
         private UserCard creator;
         private LocalDateTime createdAt;
         private Long   lastMessageAt;
@@ -68,9 +78,16 @@ public class PeerResponse {
         private String hackathonName;
         private Group.GroupType type;
         private int    maxMembers;
+
+        @JsonProperty("open")
         private boolean open;
-        private boolean isMember;
-        private boolean isAdmin;
+
+        @JsonProperty("isMember")
+        private boolean member;
+
+        @JsonProperty("isAdmin")
+        private boolean admin;
+
         private UserCard creator;
         private List<MemberCard> members;
         private LocalDateTime createdAt;
