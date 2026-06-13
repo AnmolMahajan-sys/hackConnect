@@ -37,35 +37,41 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(AbstractHttpConfigurer::disable)
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
+                .csrf(AbstractHttpConfigurer::disable)
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .authorizeHttpRequests(auth -> auth
 
-                // ── Public endpoints (no token needed) ─────────────────────
+                        // ── Public endpoints (no token needed) ─────────────────────
 
-                .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                        .requestMatchers("/api/v1/auth/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
 
-                // Public GET — anyone can browse opportunities and roadmaps
-                .requestMatchers(HttpMethod.GET, "/api/v1/opportunities/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/roadmaps/**").permitAll()
+                        // Public GET — anyone can browse opportunities and roadmaps
+                        .requestMatchers(HttpMethod.GET, "/api/v1/opportunities/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/roadmaps/**").permitAll()
 
-                // AI mentor — public (students can ask without an account)
-                .requestMatchers(HttpMethod.POST, "/api/v1/mentor/**").permitAll()
+                        // AI mentor — public (students can ask without an account)
+                        .requestMatchers(HttpMethod.POST, "/api/v1/mentor/**").permitAll()
 
-                // WebSocket handshake endpoint — public (auth via STOMP header)
-                .requestMatchers("/ws/**").permitAll()
+                        // WebSocket handshake endpoint — public (auth via STOMP header)
+                        .requestMatchers("/ws/**").permitAll()
 
-                // ── Everything else requires a valid JWT ────────────────────
-                // @PreAuthorize on each method handles fine-grained role checks
+                        // ── Everything else requires a valid JWT ────────────────────
+                        // @PreAuthorize on each method handles fine-grained role checks
 
-                .anyRequest().authenticated()
-            )
-            .headers(h -> h.frameOptions(fo -> fo.sameOrigin()))
-            .authenticationProvider(authenticationProvider())
-            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+                        .anyRequest().authenticated()
+                )
+                .headers(h -> h.frameOptions(fo -> fo.sameOrigin()))
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) ->
+                                response.sendError(401, "Unauthorized: " + authException.getMessage()))
+                        .accessDeniedHandler((request, response, accessDeniedException) ->
+                                response.sendError(403, "Forbidden: " + accessDeniedException.getMessage()))
+                )
+                .authenticationProvider(authenticationProvider())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
